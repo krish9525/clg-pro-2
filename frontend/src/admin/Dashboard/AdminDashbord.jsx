@@ -81,8 +81,8 @@ const statConfig = [
 const quickActions = [
   { label: "Add Course",   icon: "➕", to: "/admin/course", color: "#8a4baf" },
   { label: "Manage Users", icon: "👤", to: "/admin/users",  color: "#667eea" },
+  { label: "Student Chat", icon: "💬", to: "/chat",         color: "#f59e0b" },
   { label: "View Site",    icon: "🌐", to: "/",             color: "#10b981" },
-  { label: "Courses List", icon: "📋", to: "/courses",      color: "#f59e0b" },
 ];
 
 const tips = [
@@ -100,19 +100,25 @@ const AdminDashbord = ({ user }) => {
   const [tipIndex] = useState(() => Math.floor(Math.random() * tips.length));
 
   useEffect(() => {
-    if (user && user.role !== "admin") navigate("/");
+    if (user && user.role !== "admin" && user.mainrole !== "superadmin") {
+      navigate("/");
+    }
   }, [user, navigate]);
 
-  if (!user) return null;
-
   useEffect(() => {
+    if (!user) return;
     axios
       .get(`${server}/api/stats`, {
         headers: { token: localStorage.getItem("token") },
       })
-      .then(({ data }) => { setStats(data.stats); setLoading(false); })
+      .then(({ data }) => {
+        setStats(data.stats);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
-  }, []);
+  }, [user]);
+
+  if (!user) return null;
 
   return (
     <Layout>

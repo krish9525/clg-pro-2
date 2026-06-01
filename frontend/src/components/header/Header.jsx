@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import "./header.css";
 import { Link, useNavigate } from "react-router-dom";
+import { UserData } from "../../context/UserContext";
 
 const Header = ({ isAuth }) => {
+  const { user } = UserData();
+  const isAdmin = user?.role === "admin" || user?.mainrole === "superadmin";
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
@@ -30,6 +33,7 @@ const Header = ({ isAuth }) => {
         <Link to="/courses" onClick={closeMenu}>Courses</Link>
         <Link to="/about" onClick={closeMenu}>About</Link>
         {isAuth && <Link to="/chat" onClick={closeMenu}>💬 Chat</Link>}
+        {isAdmin && <Link to="/admin/dashboard" onClick={closeMenu}>⚙️ Admin</Link>}
         {isAuth && <Link to="/game" onClick={closeMenu}>🎮 Quiz Game</Link>}
         {isAuth ? (
           <Link to="/account" onClick={closeMenu} className="nav-account-btn">Account</Link>
@@ -74,6 +78,7 @@ const Header = ({ isAuth }) => {
         <Link to="/courses" onClick={closeMenu}>📚 Courses</Link>
         <Link to="/about" onClick={closeMenu}>ℹ️ About</Link>
         {isAuth && <Link to="/chat" onClick={closeMenu}>💬 Chat</Link>}
+        {isAdmin && <Link to="/admin/dashboard" onClick={closeMenu}>⚙️ Admin</Link>}
         {isAuth && <Link to="/game" onClick={closeMenu}>🎮 Quiz Game</Link>}
         {isAuth ? (
           <Link to="/account" onClick={closeMenu}>👤 Account</Link>

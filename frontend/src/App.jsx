@@ -24,6 +24,7 @@ import ChatPage from "./pages/chat/ChatPage";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import StudyGame from "./pages/game/StudyGame";
+import AdminRoute from "./components/AdminRoute";
 
 const App = () => {
   const { isAuth, user, loading } = UserData();
@@ -82,16 +83,28 @@ const App = () => {
 
             <Route
               path="/admin/dashboard"
-              element={isAuth ? <AdminDashbord user={user} /> : <Login />}
+              element={
+                <AdminRoute>
+                  <AdminDashbord user={user} />
+                </AdminRoute>
+              }
             />
 
             <Route
               path="/admin/course"
-              element={isAuth ? <AdminCourses user={user} /> : <Login />}
+              element={
+                <AdminRoute>
+                  <AdminCourses user={user} />
+                </AdminRoute>
+              }
             />
             <Route
               path="/admin/users"
-              element={isAuth ? <AdminUsers user={user} /> : <Login />}
+              element={
+                <AdminRoute>
+                  <AdminUsers user={user} />
+                </AdminRoute>
+              }
             />
           </Routes>
           <Footer />

@@ -1,98 +1,214 @@
-import { useContext, useEffect, useState, useRef } from 'react';
+import { useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { UserContext } from '../../context/UserContext';
 import io from 'socket.io-client';
 import axios from 'axios';
 import { server } from '../../main';
 import './chat.css';
 
-const EMOJIS = ['😊','😂','👍','❤️','🔥','🎉','😎','🤔','👏','💯','✅','🙏','😅','😍','🚀','💪','😢','😮','🤣','👀'];
+const EMOJIS = ['😊', '😂', '👍', '❤️', '🔥', '🎉', '😎', '🤔', '👏', '💯'];
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
-const Chat = ({ receiverId, receiverName = 'Admin' }) => {
+const getId = (val) => (val?._id || val)?.toString?.() || String(val);
+
+const upsertMessage = (list, incoming) => {
+  const id = getId(incoming._id);
+  if (!id) return [...list, incoming];
+  const idx = list.findIndex((m) => getId(m._id) === id);
+  if (idx === -1) return [...list, incoming];
+  const next = [...list];
+  next[idx] = incoming;
+  return next;
+};
+
+const Chat = ({ receiverId, receiverName = 'User' }) => {
   const { user } = useContext(UserContext);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [typingUsers, setTypingUsers] = useState(new Set());
+  const [typingUsers, setTypingUsers] = useState(new Map());
   const [showEmoji, setShowEmoji] = useState(false);
-  const socketRef = useRef();
-  const messagesEndRef = useRef();
-  const typingTimeoutRef = useRef();
-  const inputRef = useRef();
+  const [uploading, setUploading] = useState(false);
+  const [activeReactionMsg, setActiveReactionMsg] = useState(null);
+
+  const socketRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const isSendingRef = useRef(false);
+
+  const myId = getId(user?._id);
+  const partnerId = getId(receiverId);
+
+  const authHeaders = useCallback(
+    () => ({ headers: { token: localStorage.getItem('token') } }),
+    []
+  );
+
+  const mergeMessages = useCallback((incoming) => {
+    setMessages((prev) => upsertMessage(prev, incoming));
+  }, []);
 
   useEffect(() => {
-    if (!user?._id) return;
-    socketRef.current = io(server);
-    socketRef.current.emit('join', user._id);
-    return () => socketRef.current.disconnect();
-  }, [user?._id]);
+    if (!myId) return;
+
+    const socket = io(server, { transports: ['websocket', 'polling'] });
+    socketRef.current = socket;
+    socket.emit('join', myId);
+
+    socket.on('chat:message', mergeMessages);
+    socket.on('chat:reaction', mergeMessages);
+    socket.on('typing', ({ sender, senderName }) => {
+      if (getId(sender) !== partnerId) return;
+      setTypingUsers((prev) => {
+        const next = new Map(prev);
+        next.set(getId(sender), senderName || 'Someone');
+        return next;
+      });
+    });
+    socket.on('stopTyping', ({ sender }) => {
+      setTypingUsers((prev) => {
+        const next = new Map(prev);
+        next.delete(getId(sender));
+        return next;
+      });
+    });
+
+    return () => {
+      socket.off('chat:message');
+      socket.off('chat:reaction');
+      socket.off('typing');
+      socket.off('stopTyping');
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [myId, partnerId, mergeMessages]);
 
   useEffect(() => {
     const fetchHistory = async () => {
+      if (!partnerId) return;
       try {
-        const { data } = await axios.get(`${server}/api/chat/${receiverId}`, {
-          headers: { token: localStorage.getItem('token') }
-        });
-        setMessages(data.messages);
+        const { data } = await axios.get(
+          `${server}/api/chat/${partnerId}`,
+          authHeaders()
+        );
+        setMessages(data.messages || []);
       } catch (error) {
         console.error(error);
       }
     };
-    if (receiverId) fetchHistory();
-  }, [receiverId]);
+    fetchHistory();
+  }, [partnerId, authHeaders]);
 
   useEffect(() => {
-    if (!socketRef.current) return;
-    socketRef.current.on('receiveMessage', (message) => {
-      setMessages(prev => [...prev, message]);
-    });
-    socketRef.current.on('typing', (data) => {
-      setTypingUsers(prev => new Set(prev).add(data.sender));
-    });
-    socketRef.current.on('stopTyping', (data) => {
-      setTypingUsers(prev => { const s = new Set(prev); s.delete(data.sender); return s; });
-    });
-    return () => {
-      socketRef.current.off('receiveMessage');
-      socketRef.current.off('typing');
-      socketRef.current.off('stopTyping');
-    };
-  }, [socketRef.current]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, typingUsers]);
 
-  const sendMessage = () => {
-    if (!newMessage.trim()) return;
-    const messageData = {
-      sender: user._id,
-      receiver: receiverId,
-      message: newMessage.trim(),
-    };
-    socketRef.current.emit('sendMessage', messageData);
-    setMessages(prev => [...prev, { ...messageData, createdAt: new Date() }]);
+  const isOwn = (msg) => getId(msg.sender) === myId;
+
+  const sendMessage = async () => {
+    const text = newMessage.trim();
+    if (!text || !socketRef.current || isSendingRef.current) return;
+
+    isSendingRef.current = true;
+    socketRef.current.emit('sendMessage', {
+      sender: myId,
+      receiver: partnerId,
+      message: text,
+      messageType: 'text',
+    });
     setNewMessage('');
-    socketRef.current.emit('stopTyping', { sender: user._id, receiver: receiverId });
     setShowEmoji(false);
+    socketRef.current.emit('stopTyping', {
+      sender: myId,
+      receiver: partnerId,
+    });
+    setTimeout(() => {
+      isSendingRef.current = false;
+    }, 400);
+  };
+
+  const sendImage = async (file) => {
+    if (!file || !socketRef.current || uploading) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const { data } = await axios.post(
+        `${server}/api/chat/upload`,
+        formData,
+        {
+          ...authHeaders(),
+          headers: {
+            ...authHeaders().headers,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      const caption = newMessage.trim();
+      socketRef.current.emit('sendMessage', {
+        sender: myId,
+        receiver: partnerId,
+        message: caption,
+        messageType: 'image',
+        imageUrl: data.imageUrl,
+      });
+      setNewMessage('');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const toggleReaction = (messageId, emoji) => {
+    socketRef.current?.emit('chat:react', {
+      messageId,
+      emoji,
+      userId: myId,
+    });
+    setActiveReactionMsg(null);
   };
 
   const handleInputChange = (e) => {
     setNewMessage(e.target.value);
     if (!socketRef.current) return;
-    socketRef.current.emit('typing', { sender: user._id, receiver: receiverId });
+    socketRef.current.emit('typing', {
+      sender: myId,
+      receiver: partnerId,
+      senderName: user?.name,
+    });
     clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
-      socketRef.current.emit('stopTyping', { sender: user._id, receiver: receiverId });
+      socketRef.current?.emit('stopTyping', { sender: myId, receiver: partnerId });
     }, 1000);
   };
 
-  const addEmoji = (emoji) => {
-    setNewMessage(prev => prev + emoji);
-    inputRef.current?.focus();
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   };
 
-  const formatTime = (d) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatTime = (d) =>
+    new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
   const formatDate = (d) => {
-    const date = new Date(d), today = new Date(), yesterday = new Date(today);
+    const date = new Date(d);
+    const today = new Date();
+    const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     if (date.toDateString() === today.toDateString()) return 'Today';
     if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-    return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString([], {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   const grouped = messages.reduce((g, m) => {
@@ -102,64 +218,164 @@ const Chat = ({ receiverId, receiverName = 'Admin' }) => {
     return g;
   }, {});
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  const mediaUrl = (path) =>
+    path?.startsWith('http') ? path : `${server}${path}`;
+
+  const typingLabel = [...typingUsers.values()][0];
 
   return (
     <div className="chat-container">
-      {/* Header */}
       <div className="chat-header">
-        <div className="chat-header-avatar">🎓</div>
+        <div className="chat-header-avatar">
+          {receiverName?.charAt(0)?.toUpperCase() || '?'}
+        </div>
         <div className="chat-header-info">
           <h3>{receiverName}</h3>
-          <span className="header-status">🟢 Online</span>
+          <span className="header-status">Direct message</span>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="messages" onClick={() => setShowEmoji(false)}>
+      <div className="messages" onClick={() => { setShowEmoji(false); setActiveReactionMsg(null); }}>
         {messages.length === 0 && (
           <div className="no-messages">
-            <div style={{ fontSize: 36, marginBottom: 12 }}>👋</div>
+            <div className="no-messages-icon">👋</div>
             <p>Say hello to {receiverName}!</p>
+            <small>Messages are saved — you can continue anytime after login.</small>
           </div>
         )}
 
         {Object.entries(grouped).map(([date, msgs]) => (
           <div key={date} className="date-group">
             <div className="date-header">{formatDate(date)}</div>
-            {msgs.map((msg, i) => (
-              <div key={i} className={`message ${msg.sender === user._id ? 'sent' : 'received'}`}>
-                <p>{msg.message}</p>
-                <span>{formatTime(msg.createdAt)}</span>
-              </div>
-            ))}
+            {msgs.map((msg) => {
+              const own = isOwn(msg);
+              const senderName = msg.sender?.name || 'Unknown';
+              const showSenderLabel = !own;
+
+              return (
+                <div
+                  key={getId(msg._id) || `${msg.createdAt}-${msg.message}`}
+                  className={`message-row ${own ? 'own' : 'other'}`}
+                >
+                  {!own && (
+                    <div className="msg-avatar" title={senderName}>
+                      {senderName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className={`message-bubble ${own ? 'sent' : 'received'}`}>
+                    {showSenderLabel && (
+                      <span className="msg-sender-name">{senderName}</span>
+                    )}
+
+                    {msg.messageType === 'image' && msg.imageUrl && (
+                      <a
+                        href={mediaUrl(msg.imageUrl)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="msg-image-link"
+                      >
+                        <img
+                          src={mediaUrl(msg.imageUrl)}
+                          alt="Shared"
+                          className="msg-image"
+                        />
+                      </a>
+                    )}
+
+                    {msg.message && <p className="msg-text">{msg.message}</p>}
+
+                    <div className="msg-meta">
+                      <span className="msg-time">{formatTime(msg.createdAt)}</span>
+                      {own && <span className="msg-you-tag">You</span>}
+                    </div>
+
+                    {msg.reactions?.length > 0 && (
+                      <div className="msg-reactions">
+                        {msg.reactions.map((r, i) => (
+                          <span key={`${r.userId}-${r.emoji}-${i}`} className="reaction-chip" title={r.userName}>
+                            {r.emoji}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      className="react-toggle-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveReactionMsg(
+                          activeReactionMsg === getId(msg._id) ? null : getId(msg._id)
+                        );
+                      }}
+                      title="React"
+                    >
+                      😀
+                    </button>
+
+                    {activeReactionMsg === getId(msg._id) && (
+                      <div className="reaction-picker" onClick={(e) => e.stopPropagation()}>
+                        {REACTION_EMOJIS.map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            className="reaction-pick-btn"
+                            onClick={() => toggleReaction(getId(msg._id), emoji)}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ))}
 
-        {typingUsers.has(receiverId) && (
+        {typingLabel && (
           <div className="typing-indicator">
-            <span></span><span></span><span></span>
+            <span />
+            <span />
+            <span />
+            <em>{typingLabel} is typing...</em>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Emoji picker */}
       {showEmoji && (
-        <div className="emoji-picker">
+        <div className="emoji-picker" onClick={(e) => e.stopPropagation()}>
           {EMOJIS.map((e) => (
-            <button key={e} className="emoji-item" onClick={() => addEmoji(e)}>{e}</button>
+            <button key={e} type="button" className="emoji-item" onClick={() => setNewMessage((p) => p + e)}>
+              {e}
+            </button>
           ))}
         </div>
       )}
 
-      {/* Input */}
       <div className="input-container">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => sendImage(e.target.files?.[0])}
+        />
         <button
+          type="button"
+          className="attach-btn"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          title="Send image"
+        >
+          {uploading ? '⏳' : '📷'}
+        </button>
+        <button
+          type="button"
           className="emoji-btn"
-          onClick={(e) => { e.stopPropagation(); setShowEmoji(p => !p); }}
+          onClick={(e) => { e.stopPropagation(); setShowEmoji((p) => !p); }}
           title="Emoji"
         >
           😊
@@ -169,10 +385,17 @@ const Chat = ({ receiverId, receiverName = 'Admin' }) => {
           type="text"
           value={newMessage}
           onChange={handleInputChange}
-          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-          placeholder="Type a message..."
+          onKeyDown={handleKeyDown}
+          placeholder={uploading ? 'Uploading image...' : 'Type a message...'}
+          disabled={uploading}
         />
-        <button className="send-btn" onClick={sendMessage} title="Send">
+        <button
+          type="button"
+          className="send-btn"
+          onClick={sendMessage}
+          disabled={!newMessage.trim() || isSendingRef.current}
+          title="Send"
+        >
           ➤
         </button>
       </div>

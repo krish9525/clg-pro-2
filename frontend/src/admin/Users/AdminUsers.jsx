@@ -8,21 +8,18 @@ import toast from "react-hot-toast";
 
 const AdminUsers = ({ user }) => {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user && user.role !== "admin" && user.mainrole !== "superadmin") {
-      navigate("/");
-    }
-  }, [user, navigate]);
-
-  if (!user) return null;
-
   const [users, setUsers] = useState([]);
   const [filterRole, setFilterRole] = useState("all");
   const [selectedUser, setSelectedUser] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [courseToRevoke, setCourseToRevoke] = useState(null);
+
+  useEffect(() => {
+    if (user && user.role !== "admin" && user.mainrole !== "superadmin") {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   async function fetchUsers() {
     try {
@@ -39,8 +36,11 @@ const AdminUsers = ({ user }) => {
   }
 
   useEffect(() => {
+    if (!user) return;
     fetchUsers();
-  }, []);
+  }, [user]);
+
+  if (!user) return null;
 
   const filteredUsers = users.filter((u) => {
     if (filterRole === "all") return true;

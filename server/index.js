@@ -5,7 +5,7 @@ import Razorpay from "razorpay";
 import cors from "cors";
 import { Server } from "socket.io";
 import { createServer } from "http";
-import Chat from "./models/Chat.js";
+import { registerChatSocket } from "./socket/chatSocket.js";
 
 dotenv.config();
 
@@ -21,6 +21,7 @@ app.use(express.json());
 
 const allowedOrigins = [
   process.env.frontendurl,
+  "http://localhost:8080",
   "http://localhost:5174",
   "http://localhost:5175",
   "http://localhost:5176",
@@ -39,7 +40,7 @@ app.use(
   })
 );
 
-const port = process.env.PORT;
+const port = process.env.PORT || 8002;
 
 app.get("/", (req, res) => {
   res.send("Server is working");
@@ -62,67 +63,15 @@ app.use("/api/chat", chatRoutes);
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.frontendurl || "http://localhost:5174",
+    origin: allowedOrigins.length ? allowedOrigins : ["http://localhost:5174"],
     credentials: true,
-  }
+  },
 });
 
 const userSocketMap = new Map();
+registerChatSocket(io, userSocketMap);
 
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
-  socket.on('join', (userId) => {
-    userSocketMap.set(userId, socket.id);
-    console.log(`User ${userId} joined with socket ${socket.id}`);
-  });
-
-  socket.on('sendMessage', async (data) => {
-    const { sender, receiver, message } = data;
-    // Save to DB
-    const chat = new Chat({ sender, receiver, message });
-    await chat.save();
-    // Emit to receiver
-    const receiverSocketId = userSocketMap.get(receiver);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit('receiveMessage', {
-        sender,
-        receiver,
-        message,
-        createdAt: chat.createdAt
-      });
-    }
-  });
-
-  socket.on('typing', (data) => {
-    const { sender, receiver } = data;
-    const receiverSocketId = userSocketMap.get(receiver);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit('typing', { sender });
-    }
-  });
-
-  socket.on('stopTyping', (data) => {
-    const { sender, receiver } = data;
-    const receiverSocketId = userSocketMap.get(receiver);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit('stopTyping', { sender });
-    }
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-    // Remove from map
-    for (let [userId, socketId] of userSocketMap) {
-      if (socketId === socket.id) {
-        userSocketMap.delete(userId);
-        break;
-      }
-    }
-  });
-});
-
-server.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+server.listen(port, "0.0.0.0", () => {
+  console.log(`Server is running on port ${port}`);
   connectDb();
 });

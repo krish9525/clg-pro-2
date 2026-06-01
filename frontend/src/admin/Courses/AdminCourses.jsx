@@ -21,24 +21,25 @@ const categories = [
 
 const AdminCourses = ({ user }) => {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user && user.role !== "admin") navigate("/");
-  }, [user, navigate]);
-
-  if (!user) return null;
-
-  const [title, setTitle]           = useState("");
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory]     = useState("");
-  const [price, setPrice]           = useState("");
-  const [createdBy, setCreatedBy]   = useState("");
-  const [duration, setDuration]     = useState("");
-  const [image, setImage]           = useState("");
-  const [imagePrev, setImagePrev]   = useState("");
+  const [category, setCategory] = useState("");
+  const [price, setPrice] = useState("");
+  const [createdBy, setCreatedBy] = useState("");
+  const [duration, setDuration] = useState("");
+  const [image, setImage] = useState("");
+  const [imagePrev, setImagePrev] = useState("");
   const [btnLoading, setBtnLoading] = useState(false);
 
   const { courses, fetchCourses } = CourseData();
+
+  useEffect(() => {
+    if (user && user.role !== "admin" && user.mainrole !== "superadmin") {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  if (!user) return null;
 
   const changeImageHandler = (e) => {
     const file = e.target.files[0];

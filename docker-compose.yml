@@ -1,0 +1,51 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: college-elearning-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: college-elearning-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: 8002
+      DB: mongodb://mongo:27017/college-elearning
+      DB_LOCAL: mongodb://mongo:27017/college-elearning
+      frontendurl: http://localhost:8080
+    ports:
+      - "8002:8002"
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_SERVER_URL: ""
+    container_name: college-elearning-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  mongo_data:
+  uploads_data:

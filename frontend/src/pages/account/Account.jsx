@@ -24,7 +24,8 @@ const Account = ({ user }) => {
     { icon: "📊", label: "Admin Dashboard",  to: "/admin/dashboard",  color: "#8a4baf" },
     { icon: "📚", label: "Manage Courses",   to: "/admin/course",     color: "#667eea" },
     { icon: "👥", label: "Manage Users",     to: "/admin/users",      color: "#10b981" },
-    { icon: "🌐", label: "View Site",        to: "/",                 color: "#f59e0b" },
+    { icon: "💬", label: "Student Messages", to: "/chat",             color: "#f59e0b" },
+    { icon: "🌐", label: "View Site",        to: "/",                 color: "#06b6d4" },
   ];
 
   // Student nav links

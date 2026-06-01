@@ -4,6 +4,7 @@ node_modules/
 # Local environment files
 .env
 .env.*
+!.env.example
 
 # Build output
 /frontend/dist/

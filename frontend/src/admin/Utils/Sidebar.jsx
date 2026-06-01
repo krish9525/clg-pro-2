@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "./common.css";
 import { Link, useLocation } from "react-router-dom";
 import { AiFillHome } from "react-icons/ai";
-import { FaBook, FaUserAlt, FaChartBar } from "react-icons/fa";
+import { FaBook, FaUserAlt, FaChartBar, FaComments } from "react-icons/fa";
 import { IoMdLogOut, IoMdMenu, IoMdClose } from "react-icons/io";
 import { UserData } from "../../context/UserContext";
 import toast from "react-hot-toast";
@@ -12,6 +12,7 @@ const navItems = [
   { to: "/admin/dashboard", icon: <FaChartBar />, label: "Dashboard" },
   { to: "/admin/course",    icon: <FaBook />,     label: "Courses" },
   { to: "/admin/users",     icon: <FaUserAlt />,  label: "Users" },
+  { to: "/chat",            icon: <FaComments />, label: "Messages" },
 ];
 
 const Sidebar = () => {

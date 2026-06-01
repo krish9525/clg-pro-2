@@ -8,75 +8,135 @@ import "../../components/chat/chat.css";
 const ChatPage = () => {
   const { user } = useContext(UserContext);
   const [admin, setAdmin] = useState(null);
+  const [conversations, setConversations] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
-    const fetchAdmin = async () => {
+    const load = async () => {
+      setLoading(true);
+      setError("");
       try {
-        const { data } = await axios.get(`${server}/api/user/admin`, {
-          headers: { token: localStorage.getItem("token") },
-        });
-        setAdmin(data.admin);
+        if (isAdmin) {
+          const { data } = await axios.get(
+            `${server}/api/chat/conversations/list`,
+            { headers: { token: localStorage.getItem("token") } }
+          );
+          setConversations(data.conversations || []);
+          if (data.conversations?.length) {
+            setSelectedUser(data.conversations[0].user);
+          }
+        } else {
+          const { data } = await axios.get(`${server}/api/user/admin`, {
+            headers: { token: localStorage.getItem("token") },
+          });
+          setAdmin(data.admin);
+          setSelectedUser(data.admin);
+        }
       } catch (err) {
         setError("Unable to load chat. Please try again later.");
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchAdmin();
-  }, [user._id]);
+
+    if (user?._id) load();
+  }, [user?._id, isAdmin]);
 
   if (error) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", color: "var(--text-muted)", fontSize: 18 }}>
+      <div className="chat-error-state">
         ⚠️ {error}
       </div>
     );
   }
 
-  if (!admin) {
+  if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", gap: 12, color: "var(--text-muted)" }}>
-        <span style={{ fontSize: 28, animation: "spin 1s linear infinite" }}>⏳</span>
+      <div className="chat-loading-state">
+        <span className="chat-spinner">⏳</span>
         Loading chat...
       </div>
     );
   }
 
+  const activePartner = selectedUser || admin;
+  const partnerName = activePartner?.name || (isAdmin ? "Select a user" : "Support");
+
   return (
     <div className="chat-page-wrapper">
-      {/* Sidebar */}
       <div className="chat-sidebar">
         <div className="sidebar-header">
           <h2>💬 Messages</h2>
-          <p>Chat with support</p>
+          <p>{isAdmin ? "All student chats" : "Chat with support"}</p>
         </div>
-        <div className="contact-item active">
-          <div className="contact-avatar">
-            🎓
-            <div className="online-dot" />
+
+        {isAdmin ? (
+          <div className="contacts-list">
+            {conversations.length === 0 && (
+              <p className="no-contacts">No conversations yet.</p>
+            )}
+            {conversations.map(({ user: contact, lastMessage, lastMessageAt }) => (
+              <button
+                key={contact._id}
+                type="button"
+                className={`contact-item ${
+                  selectedUser?._id === contact._id ? "active" : ""
+                }`}
+                onClick={() => setSelectedUser(contact)}
+              >
+                <div className="contact-avatar">
+                  {contact.name?.charAt(0)?.toUpperCase() || "?"}
+                  <div className="online-dot" />
+                </div>
+                <div className="contact-info">
+                  <div className="contact-name">{contact.name}</div>
+                  <div className="contact-preview">{lastMessage}</div>
+                  <div className="contact-time">
+                    {new Date(lastMessageAt).toLocaleString([], {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </div>
+              </button>
+            ))}
           </div>
-          <div className="contact-info">
-            <div className="contact-name">{admin.name || "Admin"}</div>
-            <div className="contact-status">🟢 Online</div>
+        ) : (
+          <div className="contact-item active">
+            <div className="contact-avatar">
+              {admin?.name?.charAt(0)?.toUpperCase() || "🎓"}
+              <div className="online-dot" />
+            </div>
+            <div className="contact-info">
+              <div className="contact-name">{admin?.name || "Admin"}</div>
+              <div className="contact-status">Support team</div>
+            </div>
           </div>
-        </div>
-        <div style={{ padding: "20px 16px", marginTop: "auto" }}>
-          <div style={{
-            background: "rgba(138,75,175,0.08)",
-            border: "1px solid rgba(138,75,175,0.15)",
-            borderRadius: 14,
-            padding: "14px 16px",
-            fontSize: 13,
-            color: "var(--text-muted)",
-            lineHeight: 1.6,
-          }}>
-            💡 <strong>Tip:</strong> Use emoji button 😊 for quick reactions. Press <kbd>Enter</kbd> to send.
-          </div>
+        )}
+
+        <div className="sidebar-tip">
+          💡 Send text, images 📷, and react with 😀 on any message. History is saved in the database.
         </div>
       </div>
 
-      {/* Chat window */}
-      <Chat receiverId={admin._id} receiverName={admin.name || "Admin"} />
+      {activePartner?._id ? (
+        <Chat
+          key={activePartner._id}
+          receiverId={activePartner._id}
+          receiverName={partnerName}
+        />
+      ) : (
+        <div className="chat-empty-panel">
+          <p>Select a conversation from the left to start chatting.</p>
+        </div>
+      )}
     </div>
   );
 };
