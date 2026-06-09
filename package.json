@@ -1,0 +1,12 @@
+{
+  "name": "mern-elearning",
+  "private": true,
+  "version": "1.0.0",
+  "description": "MERN E-Learning — root scripts for S3 frontend deploy",
+  "scripts": {
+    "build": "npm run build --prefix frontend",
+    "build:s3": "bash scripts/build-s3.sh",
+    "preview": "npm run preview --prefix frontend",
+    "deploy:s3": "bash scripts/build-s3.sh && bash scripts/deploy-s3.sh"
+  }
+}

@@ -1,0 +1,60 @@
+.lr-wrap {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid #312e81;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+.lr-title { color: #e2e8f0; margin: 0 0 14px; font-size: 0.95rem; }
+
+/* Upload */
+.lr-upload { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.lr-name-input {
+  padding: 8px 12px; background: #0f0c29;
+  border: 1px solid #312e81; border-radius: 8px;
+  color: #e2e8f0; font-size: 0.85rem;
+}
+.lr-name-input:focus { outline: none; border-color: #7c3aed; }
+.lr-upload-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 9px 18px; border-radius: 8px;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff; font-weight: 600; cursor: pointer;
+  font-size: 0.88rem; transition: opacity 0.2s;
+}
+.lr-upload-btn.uploading { opacity: 0.6; cursor: not-allowed; }
+.lr-hint { color: #475569; font-size: 0.75rem; margin: 0; }
+
+/* List */
+.lr-list { display: flex; flex-direction: column; gap: 10px; }
+.lr-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px; border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid #1e1b4b;
+  transition: border-color 0.2s;
+}
+.lr-item:hover { border-color: #3730a3; }
+.lr-icon { font-size: 1.5rem; flex-shrink: 0; }
+.lr-info { flex: 1; min-width: 0; }
+.lr-name {
+  display: block; color: #a78bfa; font-weight: 600;
+  font-size: 0.9rem; text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lr-name:hover { color: #c4b5fd; }
+.lr-meta { color: #64748b; font-size: 0.75rem; }
+.lr-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.lr-dl-btn {
+  padding: 5px 12px; border-radius: 6px;
+  background: #3730a3; color: #e2e8f0;
+  font-size: 0.8rem; text-decoration: none;
+  transition: background 0.2s;
+}
+.lr-dl-btn:hover { background: #7c3aed; }
+.lr-del-btn {
+  padding: 5px 10px; border-radius: 6px; border: 1px solid #7f1d1d;
+  background: transparent; color: #f87171; cursor: pointer; font-size: 0.85rem;
+}
+.lr-empty { color: #475569; font-size: 0.85rem; text-align: center; padding: 12px 0; }
+.lr-loading { color: #94a3b8; font-size: 0.85rem; padding: 12px 0; }
