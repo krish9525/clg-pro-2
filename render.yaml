@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: elearning-backend
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB
+        sync: false
+      - key: Razorpay_Key
+        sync: false
+      - key: Razorpay_Secret
+        sync: false
+      - key: Jwt_Sec
+        sync: false
+      - key: Activation_Secret
+        sync: false
+      - key: Forgot_Secret
+        sync: false
+      - key: Refresh_Secret
+        sync: false
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        sync: false
+      - key: MAIL_USER
+        sync: false
+      - key: MAIL_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: frontendurl
+        sync: false

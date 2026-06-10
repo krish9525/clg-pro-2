@@ -16,6 +16,10 @@ const schema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    // ─── Certificate ─────────────────────────────────────────────────────────
+    certificateEarned:   { type: Boolean, default: false },
+    certificateEarnedAt: { type: Date,    default: null  },
+    certificateId:       { type: String,  default: null  },
   },
   {
     timestamps: true,

@@ -20,7 +20,8 @@ export const submitQuiz      = (quizId, answers, timeTaken) =>
 export const getMyQuizResults = (quizId)  => api.get(`/api/v1/quiz/${quizId}/results`);
 
 // ─── Transcript ───────────────────────────────────────────────────────────────
-export const getTranscript   = (lectureId) => api.get(`/api/v1/lecture/${lectureId}/transcript`);
+export const getTranscript   = (lectureId, lang = "en") =>
+  api.get(`/api/v1/lecture/${lectureId}/transcript`, { params: { lang } });
 
 // ─── Resources ────────────────────────────────────────────────────────────────
 export const getResources    = (lectureId) => api.get(`/api/v1/lecture/${lectureId}/resources`);

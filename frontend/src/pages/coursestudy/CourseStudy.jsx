@@ -5,6 +5,7 @@ import { CourseData } from "../../context/CourseContext";
 import { server } from "../../main";
 import axios from "axios";
 import Loading from "../../components/loading/Loading";
+import CertificateButton from "../../components/certificate/CertificateButton";
 
 const getCategory = (title = "") => {
   const t = title.toLowerCase();
@@ -21,28 +22,26 @@ const CourseStudy = ({ user }) => {
   const { fetchCourse, course } = CourseData();
   const navigate = useNavigate();
   const [lectureCount, setLectureCount] = useState(null);
-  const [progress, setProgress] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [progress, setProgress]         = useState(null);
+  const [loading, setLoading]           = useState(true);
 
+  // ─── ALL hooks before any conditional return ─────────────────────────────
   useEffect(() => {
     if (user && user.role !== "admin" && !user.subscription?.includes(params.id)) {
       navigate("/");
     }
   }, [user, navigate, params.id]);
 
-  if (!user) return null;
-
   useEffect(() => {
+    if (!user) return;
     const load = async () => {
       await fetchCourse(params.id);
-      // Fetch lecture count
       try {
         const { data } = await axios.get(`${server}/api/lectures/${params.id}`, {
           headers: { token: localStorage.getItem("token") },
         });
         setLectureCount(data.lectures?.length || 0);
       } catch { setLectureCount(0); }
-      // Fetch progress
       try {
         const { data } = await axios.get(
           `${server}/api/user/progress?course=${params.id}`,
@@ -53,21 +52,28 @@ const CourseStudy = ({ user }) => {
       setLoading(false);
     };
     load();
-  }, [params.id]);
+  }, [params.id, user]);
 
+  // ─── Early returns (after all hooks) ─────────────────────────────────────
+  if (!user) return null;
   if (loading) return <Loading />;
   if (!course) return null;
 
-  const cat = getCategory(course.title);
+  const cat          = getCategory(course.title);
   const completedPct = progress ? Math.round(progress.courseProgressPercentage) : 0;
-  const isAdmin = user.role === "admin";
+  const isAdmin      = user.role === "admin";
+
+  // Safe image URL (no double slash)
+  const imgSrc = course.image?.startsWith("http")
+    ? course.image
+    : `${server}${course.image}`;
 
   return (
     <div className="course-study-page">
       {/* ===== HERO BANNER ===== */}
       <div className="cs-hero">
         <div className="cs-hero-overlay" />
-        <img src={`${server}/${course.image}`} alt={course.title} className="cs-hero-bg" />
+        <img src={imgSrc} alt={course.title} className="cs-hero-bg" />
         <div className="cs-hero-content">
           <span className="cs-category-badge" style={{ background: cat.color }}>
             {cat.label}
@@ -109,6 +115,17 @@ const CourseStudy = ({ user }) => {
                   🏆 Course Completed! Well done!
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Certificate (non-admin, only when enrolled) */}
+          {!isAdmin && (
+            <div className="cs-card">
+              <h3>🎓 Certificate</h3>
+              <p style={{ fontSize: "0.9rem", marginBottom: "12px", opacity: 0.8 }}>
+                Complete all lectures to earn your certificate of completion.
+              </p>
+              <CertificateButton courseId={params.id} progress={completedPct} />
             </div>
           )}
 
@@ -165,13 +182,12 @@ const CourseStudy = ({ user }) => {
         <div className="cs-right">
           <div className="cs-cta-card">
             <div className="cs-cta-img-wrap">
-              <img src={`${server}/${course.image}`} alt={course.title} className="cs-cta-img" />
+              <img src={imgSrc} alt={course.title} className="cs-cta-img" />
             </div>
 
             <div className="cs-cta-body">
               <div className="cs-cta-price">₹{course.price}</div>
 
-              {/* Progress mini for enrolled */}
               {!isAdmin && progress && (
                 <div className="cs-mini-progress">
                   <div className="cs-mini-bar">
@@ -194,6 +210,8 @@ const CourseStudy = ({ user }) => {
                 <div className="cs-feat">♾️ Lifetime access</div>
                 <div className="cs-feat">🎬 {lectureCount ?? 0} video lectures</div>
                 <div className="cs-feat">📜 Completion certificate</div>
+                <div className="cs-feat">📝 Lecture quizzes</div>
+                <div className="cs-feat">📄 Study materials</div>
               </div>
 
               <button

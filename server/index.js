@@ -53,12 +53,20 @@ import userRoutes from "./routes/user.js";
 import courseRoutes from "./routes/course.js";
 import adminRoutes from "./routes/admin.js";
 import chatRoutes from "./routes/chat.js";
+import quizRoutes from "./routes/quizRoutes.js";
+import lectureExtRoutes from "./routes/lectureExtRoutes.js";
+import certificateRoutes from "./routes/certificateRoutes.js";
 
-// using routes
+// ─── Core routes (legacy /api prefix) ─────────────────────────────────────────
 app.use("/api", userRoutes);
 app.use("/api", courseRoutes);
 app.use("/api", adminRoutes);
 app.use("/api/chat", chatRoutes);
+
+// ─── Feature routes at /api/v1 ────────────────────────────────────────────────
+app.use("/api/v1", quizRoutes);
+app.use("/api/v1", lectureExtRoutes);
+app.use("/api/v1", certificateRoutes);
 
 const server = createServer(app);
 const io = new Server(server, {

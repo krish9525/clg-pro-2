@@ -8,7 +8,20 @@ import './chat.css';
 const EMOJIS = ['😊', '😂', '👍', '❤️', '🔥', '🎉', '😎', '🤔', '👏', '💯'];
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
-const getId = (val) => (val?._id || val)?.toString?.() || String(val);
+// Colour palette — one per user, hash by ID
+const USER_COLORS = ['#8a4baf','#667eea','#10b981','#f59e0b','#ef4444','#3b82f6','#ec4899','#14b8a6'];
+const userColor = (id = '') => {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return USER_COLORS[h % USER_COLORS.length];
+};
+
+const getId = (val) => {
+  if (!val) return '';
+  if (typeof val === 'string') return val.trim();
+  if (typeof val === 'object' && val._id) return String(val._id).trim();
+  return String(val).trim();
+};
 
 const upsertMessage = (list, incoming) => {
   const id = getId(incoming._id);
@@ -36,7 +49,7 @@ const Chat = ({ receiverId, receiverName = 'User' }) => {
   const fileInputRef = useRef(null);
   const isSendingRef = useRef(false);
 
-  const myId = getId(user?._id);
+  const myId = getId(user?._id);        // always a plain string
   const partnerId = getId(receiverId);
 
   const authHeaders = useCallback(
@@ -103,7 +116,11 @@ const Chat = ({ receiverId, receiverName = 'User' }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, typingUsers]);
 
-  const isOwn = (msg) => getId(msg.sender) === myId;
+  // Strict own-check: normalise both sides to plain strings before compare
+  const isOwn = (msg) => {
+    const senderId = getId(msg.sender?._id ?? msg.sender);
+    return Boolean(myId) && Boolean(senderId) && senderId === myId;
+  };
 
   const sendMessage = async () => {
     const text = newMessage.trim();
@@ -249,8 +266,11 @@ const Chat = ({ receiverId, receiverName = 'User' }) => {
             <div className="date-header">{formatDate(date)}</div>
             {msgs.map((msg) => {
               const own = isOwn(msg);
+              const senderId  = getId(msg.sender?._id ?? msg.sender);
               const senderName = msg.sender?.name || 'Unknown';
-              const showSenderLabel = !own;
+              // "You" on own messages so sender is always visible and unambiguous
+              const displayName = own ? 'You' : senderName;
+              const nameColor   = own ? 'rgba(255,255,255,0.85)' : userColor(senderId);
 
               return (
                 <div
@@ -258,14 +278,15 @@ const Chat = ({ receiverId, receiverName = 'User' }) => {
                   className={`message-row ${own ? 'own' : 'other'}`}
                 >
                   {!own && (
-                    <div className="msg-avatar" title={senderName}>
+                    <div className="msg-avatar" title={senderName} style={{ background: userColor(senderId) }}>
                       {senderName.charAt(0).toUpperCase()}
                     </div>
                   )}
                   <div className={`message-bubble ${own ? 'sent' : 'received'}`}>
-                    {showSenderLabel && (
-                      <span className="msg-sender-name">{senderName}</span>
-                    )}
+                    {/* Always show who sent this message */}
+                    <span className="msg-sender-name" style={{ color: nameColor }}>
+                      {displayName}
+                    </span>
 
                     {msg.messageType === 'image' && msg.imageUrl && (
                       <a
@@ -286,7 +307,6 @@ const Chat = ({ receiverId, receiverName = 'User' }) => {
 
                     <div className="msg-meta">
                       <span className="msg-time">{formatTime(msg.createdAt)}</span>
-                      {own && <span className="msg-you-tag">You</span>}
                     </div>
 
                     {msg.reactions?.length > 0 && (

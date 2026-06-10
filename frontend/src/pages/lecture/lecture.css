@@ -371,3 +371,42 @@
     border-top: 1px solid var(--border-light);
   }
 }
+
+/* ===== LECTURE FEATURE PANELS ===== */
+.lecture-features {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feature-section {
+  background: var(--card-bg, rgba(255,255,255,0.04));
+  border: 1px solid var(--border-light, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.feature-toggle-btn {
+  width: 100%;
+  padding: 14px 18px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary, #e2e8f0);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.feature-toggle-btn:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.feature-toggle-btn.admin-quiz-btn {
+  color: #f59e0b;
+}

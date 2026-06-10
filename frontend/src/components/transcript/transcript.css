@@ -1,27 +1,118 @@
+/* ── Wrapper ─────────────────────────────────────────────────────────────── */
 .tp-wrap { margin-top: 12px; }
+
 .tp-toggle {
-  background: transparent; border: 1px solid #312e81;
-  border-radius: 8px; color: #7c3aed; cursor: pointer;
-  padding: 7px 16px; font-size: 0.85rem;
-  transition: all 0.2s; width: 100%;
+  background: transparent;
+  border: 1px solid #312e81;
+  border-radius: 8px;
+  color: #7c3aed;
+  cursor: pointer;
+  padding: 7px 16px;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  width: 100%;
 }
 .tp-toggle:hover { background: #1e1b4b; }
 
+/* ── Panel body ──────────────────────────────────────────────────────────── */
 .tp-body {
   background: rgba(255,255,255,0.02);
-  border: 1px solid #312e81; border-top: none;
+  border: 1px solid #312e81;
+  border-top: none;
   border-radius: 0 0 10px 10px;
-  padding: 14px 16px;
+  padding: 12px 16px 16px;
 }
-.tp-loading { color: #64748b; font-size: 0.85rem; }
-.tp-error   { color: #94a3b8; font-size: 0.85rem; }
+
+/* ── Language tabs ───────────────────────────────────────────────────────── */
+.tp-lang-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  align-items: center;
+}
+
+.tp-lang-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid #3730a3;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.tp-lang-btn:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.15);
+  color: #e2e8f0;
+}
+.tp-lang-btn.active {
+  background: linear-gradient(135deg, #6d28d9, #4f46e5);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+.tp-lang-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .tp-refresh {
-  padding: 5px 14px; border-radius: 6px; border: 1px solid #3730a3;
-  background: transparent; color: #7c3aed; cursor: pointer;
-  font-size: 0.8rem; margin-bottom: 10px; display: block;
+  margin-left: auto;
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: 1px solid #3730a3;
+  background: transparent;
+  color: #7c3aed;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
 }
+.tp-refresh:hover:not(:disabled) { background: rgba(99,102,241,0.1); }
+.tp-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Loading ─────────────────────────────────────────────────────────────── */
+.tp-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #64748b;
+  font-size: 0.85rem;
+  padding: 8px 0;
+}
+.tp-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #3730a3;
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: tp-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes tp-spin { to { transform: rotate(360deg); } }
+
+/* ── Error / empty ───────────────────────────────────────────────────────── */
+.tp-error { color: #94a3b8; font-size: 0.85rem; margin: 4px 0; }
+
+/* ── Transcript text ─────────────────────────────────────────────────────── */
 .tp-text {
-  color: #94a3b8; font-size: 0.85rem; line-height: 1.8;
-  max-height: 260px; overflow-y: auto;
-  scrollbar-width: thin; scrollbar-color: #3730a3 transparent;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  line-height: 1.9;
+  max-height: 280px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #3730a3 transparent;
+}
+.tp-text::-webkit-scrollbar       { width: 4px; }
+.tp-text::-webkit-scrollbar-thumb { background: #3730a3; border-radius: 2px; }
+
+/* Devanagari font for Hindi */
+.tp-devanagari {
+  font-family: "Noto Sans Devanagari", "Mangal", "Utsaah", sans-serif;
+  font-size: 0.9rem;
+  line-height: 2;
 }
