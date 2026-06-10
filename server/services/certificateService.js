@@ -120,12 +120,18 @@ export const generateCertificatePDF = async (userId, courseId) => {
        .text(`Date of Completion: ${earnedDate}`, 80, 390)
        .text(`Certificate ID: ${progress.certificateId}`, 80, 408);
 
+    // Verify URL
+    const verifyUrl = `${process.env.frontendurl || "https://your-app.pages.dev"}/verify-certificate/${progress.certificateId}`;
+    doc.fillColor("#475569")
+       .fontSize(9)
+       .text(`Verify at: ${verifyUrl}`, 80, 428);
+
     doc.fillColor("#64748b")
        .fontSize(11)
-       .text("Authorized by", W - 200, 390, { align: "center", width: 120 })
-       .moveTo(W - 200, 420).lineTo(W - 80, 420).lineWidth(1).strokeColor("#475569").stroke()
+       .text("Authorized by", W - 220, 390, { align: "center", width: 140 })
+       .moveTo(W - 220, 420).lineTo(W - 80, 420).lineWidth(1).strokeColor("#475569").stroke()
        .fillColor("#94a3b8").fontSize(10)
-       .text("EduLearn Platform", W - 200, 425, { align: "center", width: 120 });
+       .text("EduLearn Platform", W - 220, 425, { align: "center", width: 140 });
 
     doc.end();
   });

@@ -6,6 +6,7 @@ import { User } from "../models/User.js";
 import crypto from "crypto";
 import { Payment } from "../models/Payment.js";
 import { Progress } from "../models/Progress.js";
+import { checkAndAwardCertificate } from "../services/certificateService.js";
 
 export const getAllCourses = TryCatch(async (req, res) => {
   const courses = await Courses.find();
@@ -147,8 +148,14 @@ export const addProgress = TryCatch(async (req, res) => {
   }
 
   progress.completedLectures.push(lectureId);
-
   await progress.save();
+
+  // Check if all lectures done → award certificate automatically
+  try {
+    await checkAndAwardCertificate(req.user._id, req.query.course);
+  } catch (e) {
+    console.error("[Certificate] Award check failed:", e.message);
+  }
 
   res.status(201).json({
     message: "new Progress added",

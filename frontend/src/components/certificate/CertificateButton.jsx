@@ -36,10 +36,11 @@ const CertificateButton = ({ courseId, progress }) => {
     }
   };
 
-  // Not loaded yet or not earned
+  // Not loaded yet
   if (!status) return null;
 
-  const pct = progress?.courseProgressPercentage ?? 0;
+  // progress prop is passed as a plain number (0–100)
+  const pct = typeof progress === "number" ? progress : 0;
 
   if (!status.earned) {
     return (

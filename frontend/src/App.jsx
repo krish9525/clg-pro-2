@@ -25,6 +25,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import StudyGame from "./pages/game/StudyGame";
 import AdminRoute from "./components/AdminRoute";
+import VerifyCertificate from "./pages/certificate/VerifyCertificate";
 
 const App = () => {
   const { isAuth, user, loading } = UserData();
@@ -79,6 +80,12 @@ const App = () => {
             <Route
               path="/lectures/:id"
               element={isAuth ? <Lecture user={user} /> : <Login />}
+            />
+
+            {/* Certificate verification — public page, no auth needed */}
+            <Route
+              path="/verify-certificate/:certId"
+              element={<VerifyCertificate />}
             />
 
             <Route
